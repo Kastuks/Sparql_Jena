@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 node_modules
 HELP.md
 target/
@@ -32,3 +33,28 @@ build/
 
 ### VS Code ###
 .vscode/
+=======
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+>>>>>>> f23b57e101bca4bf20d0a270d6c268f4437b6aca
