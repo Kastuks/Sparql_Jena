@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -8,6 +9,7 @@ import java.util.function.Function;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import org.apache.jena.base.Sys;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
@@ -16,7 +18,11 @@ import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.ResIterator;
+import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.util.FileManagerImpl;
+import org.apache.jena.vocabulary.RDFS;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Pageable;
@@ -51,9 +57,12 @@ public class MainView extends VerticalLayout {
 
     private TextField query = new TextField("Query");
     private TextField result = new TextField();
+    private TextField meaning = new TextField();
     private ArrayList<TextField> resultsList = new ArrayList<TextField>();
     private Grid<SparqlData> grid = new Grid<>(SparqlData.class);
     private Binder<SparqlData> binder = new Binder<>(SparqlData.class);
+    static final String inputFileName  = "filename.rdf";
+
     // SparqlData sparqlData = new SparqlData();
 
     public MainView(SparqlDataService service) {
@@ -63,10 +72,10 @@ public class MainView extends VerticalLayout {
         // var textField = new TextField();
         // add(textField, button);
 
-        sparqlTest1();
-        sparqlTest2();
+        // sparqlTest1();
+        // sparqlTest2();
 
-        grid.setColumns("result");
+        grid.setColumns("result", "meaning");
         add(getForm(), grid);
 
 
@@ -88,9 +97,10 @@ public class MainView extends VerticalLayout {
 
         var addButton = new Button("Run query");
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        var showAll = new Button("Show all dictionary");
         var clearButton = new Button("Clear results");
         clearButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        layout.add(query, addButton, clearButton, nextPageButton);
+        layout.add(query, addButton, showAll, clearButton, nextPageButton);
 
         binder.bindInstanceFields(this);
 
@@ -113,18 +123,60 @@ public class MainView extends VerticalLayout {
 
             }
         });
+        showAll.addClickListener(click -> {
+            try {
+                Model model = ModelFactory.createDefaultModel();
+
+                // use the RDFDataMgr to find the input file
+                InputStream in = RDFDataMgr.open( inputFileName );
+                if (in == null) {
+                    throw new IllegalArgumentException(
+                            "File: " + inputFileName + " not found");
+                }
+
+                // read the RDF/XML file
+                model.read(in, null);
+
+                model.listSubjects();
+
+                // select all the resources with a RDFS property
+                ResIterator iter = model.listSubjectsWithProperty(RDFS.label);
+                ResIterator iter2 = model.listSubjectsWithProperty(RDFS.label);
+
+                if (iter.hasNext()) {
+                    while (iter.hasNext()) {
+                        TextField res = new TextField();
+                        res.setValue(iter.nextResource()
+                                .getProperty(RDFS.label)
+                                .getString());
+                        result.setValue(res.getValue());
+                        res.setValue(iter2.nextResource()
+                                .getProperty(RDFS.comment)
+                                .getString());
+                        meaning.setValue(res.getValue());
+
+                        var sparqlData = new SparqlData();
+                        binder.writeBean(sparqlData);
+                        sparqlDataService.addData(sparqlData);
+
+                    }
+                } else {
+                    System.out.println("No rdfs were found in the database");
+                }
+
+                refreshGrid();
+
+            } catch (ValidationException e) {
+                System.out.println("Error");
+            }
+        });
+
+
         clearButton.addClickListener(click -> {
            // grid.setItems([]);
             sparqlDataService.deleteAll();
             // repository.deleteAll();
 
-
-            // repository.
-            // em.refresh(repository);
-            // em.clear();
-            // em.close();
-           //  repository.flush();
-           //  repository.deleteAllInBatch();
             refreshGrid();
         });
 
@@ -142,7 +194,7 @@ public class MainView extends VerticalLayout {
 
     void sparqlTest12(String foaf) {
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/Jena_app/src/com/company/data.rdf");
+        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/demo/filename.rdf");
         String rezultatas;
         String queryString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/> " +
