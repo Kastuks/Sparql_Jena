@@ -29,6 +29,7 @@ public class SparqlData {
 
     private String query;
     private String result;
+    private String partOfSpeech;
     private String meaning;
 
 
@@ -59,6 +60,14 @@ public class SparqlData {
 
     public void setResult(String result) {
         this.result = result;
+    }
+
+    public String getPartOfSpeech() {
+        return partOfSpeech;
+    }
+
+    public void setPartOfSpeech(String partOfSpeech) {
+        this.partOfSpeech = partOfSpeech;
     }
 
     public String getMeaning() {

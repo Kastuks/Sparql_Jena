@@ -1,0 +1,9 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+  <rdf:Description rdf:about="http://somewhere/TableNoun">
+    <rdfs:comment>Wooden object</rdfs:comment>
+    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
+    <rdfs:label>Table</rdfs:label>
+  </rdf:Description>
+</rdf:RDF>

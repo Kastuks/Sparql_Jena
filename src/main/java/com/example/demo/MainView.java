@@ -16,10 +16,12 @@ import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResIterator;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.util.FileManagerImpl;
 import org.apache.jena.vocabulary.RDFS;
@@ -38,6 +40,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Page;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
@@ -57,11 +60,12 @@ public class MainView extends VerticalLayout {
 
     private TextField query = new TextField("Query");
     private TextField result = new TextField();
+    private TextArea partOfSpeech = new TextArea();
     private TextField meaning = new TextField();
     private ArrayList<TextField> resultsList = new ArrayList<TextField>();
     private Grid<SparqlData> grid = new Grid<>(SparqlData.class);
     private Binder<SparqlData> binder = new Binder<>(SparqlData.class);
-    static final String inputFileName  = "filename.rdf";
+    static final String inputFileName  = "dictionary.rdf";
 
     // SparqlData sparqlData = new SparqlData();
 
@@ -75,7 +79,7 @@ public class MainView extends VerticalLayout {
         // sparqlTest1();
         // sparqlTest2();
 
-        grid.setColumns("result", "meaning");
+        grid.setColumns("result", "partOfSpeech", "meaning");
         add(getForm(), grid);
 
 
@@ -95,16 +99,16 @@ public class MainView extends VerticalLayout {
         var layout = new HorizontalLayout();
         layout.setAlignItems(Alignment.BASELINE);
 
-        var addButton = new Button("Run query");
-        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        var queryButton = new Button("Run query");
+        queryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         var showAll = new Button("Show all dictionary");
         var clearButton = new Button("Clear results");
         clearButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        layout.add(query, addButton, showAll, clearButton, nextPageButton);
+        layout.add(query, queryButton, showAll, clearButton, nextPageButton);
 
         binder.bindInstanceFields(this);
 
-        addButton.addClickListener(click -> {
+        queryButton.addClickListener(click -> {
             try {
                 sparqlTest12(query.getValue());
                 for (TextField res : resultsList) {
@@ -125,6 +129,8 @@ public class MainView extends VerticalLayout {
         });
         showAll.addClickListener(click -> {
             try {
+                sparqlDataService.deleteAll();
+                refreshGrid();
                 Model model = ModelFactory.createDefaultModel();
 
                 // use the RDFDataMgr to find the input file
@@ -141,19 +147,19 @@ public class MainView extends VerticalLayout {
 
                 // select all the resources with a RDFS property
                 ResIterator iter = model.listSubjectsWithProperty(RDFS.label);
-                ResIterator iter2 = model.listSubjectsWithProperty(RDFS.label);
-
                 if (iter.hasNext()) {
                     while (iter.hasNext()) {
-                        TextField res = new TextField();
-                        res.setValue(iter.nextResource()
+                        Resource resource = iter.nextResource();
+
+                        result.setValue(resource
                                 .getProperty(RDFS.label)
                                 .getString());
-                        result.setValue(res.getValue());
-                        res.setValue(iter2.nextResource()
+                        meaning.setValue(resource
                                 .getProperty(RDFS.comment)
                                 .getString());
-                        meaning.setValue(res.getValue());
+                        partOfSpeech.setValue(resource
+                                .getProperty(RDFS.isDefinedBy)
+                                .getString());
 
                         var sparqlData = new SparqlData();
                         binder.writeBean(sparqlData);
@@ -192,27 +198,37 @@ public class MainView extends VerticalLayout {
         // sparqlTest12(query.getValue());
     }
 
-    void sparqlTest12(String foaf) {
+    void sparqlTest12(String search) {
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/demo/filename.rdf");
+        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/demo/dictionary.rdf");
         String rezultatas;
         String queryString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-                "PREFIX foaf: <http://xmlns.com/foaf/0.1/> " +
-                "SELECT * WHERE { " +
-                " ?person foaf:" + foaf + " ?x ." +
+                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+                "SELECT ?x ?word ?meaning ?partOW WHERE { " +
+                " ?x rdfs:label ?g ." +
+                " ?x rdfs:label ?word . " +
+                " ?x rdfs:comment ?meaning . " +
+                " ?x rdfs:isDefinedBy ?partOW . " +
+                " FILTER regex(?g, \"" + search + "\", \"i\") " +
                 "}";
         Query query1 = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query1, model);
 
         try {
             ResultSet results = qexec.execSelect();
+            // ResultSetFormatter.out(System.out, results, query1);
             while ( results.hasNext()) {
                 QuerySolution soln = results.nextSolution();
-                Literal name = soln.getLiteral("x");
+                Literal name = soln.getLiteral("word");
+                Literal meaning = soln.getLiteral("meaning");
+                Literal partOW = soln.getLiteral("partOW");
+                System.out.println(name);
                 TextField newVal = new TextField();
                 newVal.setValue(name.getString());
                 resultsList.add(newVal);
                 result.setValue(name.getString());
+                this.meaning.setValue(meaning.getString());
+                this.partOfSpeech.setValue(partOW.getString());
                 System.out.println(name);
             }
         }
@@ -227,9 +243,13 @@ public class MainView extends VerticalLayout {
         Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/Jena_app/src/com/company/data.rdf");
 
         String queryString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-                "PREFIX foaf: <http://xmlns.com/foaf/0.1/> " +
-                "SELECT * WHERE { " +
-                " ?person foaf:name ?x ." +
+                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+                "SELECT ?x ?word ?meaning ?partOW WHERE { " +
+                " ?x rdfs:label \"" + "search" + "\" ." +
+                " ?x rdfs:label ?word . " +
+                " ?x rdfs:comment ?meaning . " +
+                " ?x rdfs:isDefinedBy ?partOW . " +
+                " FILTER regex(?g, \"" + "search" + "\", \"i\") " +
                 "}";
         org.apache.jena.query.Query query = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
