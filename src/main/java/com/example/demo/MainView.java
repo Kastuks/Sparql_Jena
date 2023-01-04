@@ -33,6 +33,7 @@ import org.springframework.data.repository.query.FluentQuery;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasValue;
+import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -44,6 +45,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.renderer.TemplateRenderer;
 import com.vaadin.flow.router.Route;
 
 @Route("")
@@ -55,47 +57,33 @@ public class MainView extends VerticalLayout {
     @Autowired
     SparqlDataService sparqlDataService;
 
-    @Autowired
-    private SparqlDataRepository repository;
-
     private TextField query = new TextField("Query");
     private TextField result = new TextField();
     private TextArea partOfSpeech = new TextArea();
     private TextField meaning = new TextField();
     private ArrayList<TextField> resultsList = new ArrayList<TextField>();
+    private ArrayList<TextField> meaningsList = new ArrayList<TextField>();
+    private ArrayList<TextArea> partOfSpeechesList = new ArrayList<TextArea>();
     private Grid<SparqlData> grid = new Grid<>(SparqlData.class);
     private Binder<SparqlData> binder = new Binder<>(SparqlData.class);
     static final String inputFileName  = "dictionary.rdf";
 
-    // SparqlData sparqlData = new SparqlData();
-
     public MainView(SparqlDataService service) {
         this.sparqlDataService = service;
-        // add(new H1("Hello world"));
-        // var button = new Button("click me");
-        // var textField = new TextField();
-        // add(textField, button);
 
-        // sparqlTest1();
-        // sparqlTest2();
-
-        grid.setColumns("result", "partOfSpeech", "meaning");
+        grid.setColumns("result", "partOfSpeech");
+        grid.addColumn(
+                        TemplateRenderer.<SparqlData>of("<div style='white-space:normal'>[[item.meaning]]</div>")
+                                .withProperty("meaning", SparqlData::getMeaning))
+                .setHeader("Meaning").setFlexGrow(1);
         add(getForm(), grid);
 
-
-        // button.addClickListener(e -> {
-        //     add(new Paragraph("hello") + textField.getValue());
-        //     textField.clear();
-        // });
         refreshGrid();
     }
     private Component getForm() {
-        // var horlayout = new HorizontalLayout();
-        // horlayout.setAlignItems(Alignment.END);
 
         var nextPageButton = new Button("Word creation page");
 
-        // horlayout.add(nextPageButton);
         var layout = new HorizontalLayout();
         layout.setAlignItems(Alignment.BASELINE);
 
@@ -110,9 +98,13 @@ public class MainView extends VerticalLayout {
 
         queryButton.addClickListener(click -> {
             try {
-                sparqlTest12(query.getValue());
-                for (TextField res : resultsList) {
-                    result.setValue(res.getValue());
+                sparqlDataService.deleteAll();
+                sparqlSearch(query.getValue());
+                for (int i=0; i< resultsList.size(); i++) {
+                    result.setValue(resultsList.get(i).getValue());
+                    meaning.setValue(meaningsList.get(i).getValue());
+                    partOfSpeech.setValue(partOfSpeechesList.get(i).getValue());
+
                     var sparqlData = new SparqlData();
 
                     binder.writeBean(sparqlData);
@@ -121,6 +113,8 @@ public class MainView extends VerticalLayout {
 
                 }
                 resultsList.clear();
+                meaningsList.clear();
+                partOfSpeechesList.clear();
                 refreshGrid();
 
             } catch (ValidationException e) {
@@ -143,7 +137,7 @@ public class MainView extends VerticalLayout {
                 // read the RDF/XML file
                 model.read(in, null);
 
-                model.listSubjects();
+                // model.listSubjects();
 
                 // select all the resources with a RDFS property
                 ResIterator iter = model.listSubjectsWithProperty(RDFS.label);
@@ -179,10 +173,7 @@ public class MainView extends VerticalLayout {
 
 
         clearButton.addClickListener(click -> {
-           // grid.setItems([]);
             sparqlDataService.deleteAll();
-            // repository.deleteAll();
-
             refreshGrid();
         });
 
@@ -195,10 +186,9 @@ public class MainView extends VerticalLayout {
 
     private void refreshGrid() {
         grid.setItems(sparqlDataService.findAllData());
-        // sparqlTest12(query.getValue());
     }
 
-    void sparqlTest12(String search) {
+    void sparqlSearch(String search) {
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
         Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/demo/dictionary.rdf");
         String rezultatas;
@@ -216,20 +206,21 @@ public class MainView extends VerticalLayout {
 
         try {
             ResultSet results = qexec.execSelect();
-            // ResultSetFormatter.out(System.out, results, query1);
             while ( results.hasNext()) {
                 QuerySolution soln = results.nextSolution();
                 Literal name = soln.getLiteral("word");
                 Literal meaning = soln.getLiteral("meaning");
                 Literal partOW = soln.getLiteral("partOW");
-                System.out.println(name);
+                // System.out.println(name);
                 TextField newVal = new TextField();
+                TextField newVal2 = new TextField();
+                TextArea newTxtArea = new TextArea();
                 newVal.setValue(name.getString());
                 resultsList.add(newVal);
-                result.setValue(name.getString());
-                this.meaning.setValue(meaning.getString());
-                this.partOfSpeech.setValue(partOW.getString());
-                System.out.println(name);
+                newVal2.setValue(meaning.getString());
+                meaningsList.add(newVal2);
+                newTxtArea.setValue(partOW.getString());
+                partOfSpeechesList.add(newTxtArea);
             }
         }
         finally {

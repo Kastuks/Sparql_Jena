@@ -45,13 +45,16 @@ public class CreateWordView<Planet> extends VerticalLayout {
     public static final String RDFuri = "http://xmlns.com/foaf/0.1/";
     public static final String RDFSuri = "http://xmlns.com/foaf/0.1/";
     private static final String defaultURI = "http://somewhere/";
+
     public static String getRDFURI() {
         return RDFuri;
     }
+
     public static String getRDFSURI() {
         return RDFSuri;
     }
-    private static final String inputFileName  = "dictionary.rdf";
+
+    private static final String inputFileName = "dictionary.rdf";
 
     @PersistenceContext
     private EntityManager em;
@@ -93,26 +96,22 @@ public class CreateWordView<Planet> extends VerticalLayout {
         addButton.addClickListener(click -> {
 
             try {
-                if (message.getText() != "Error")
+                if (message.getText() != "Error") {
                     remove(message);
+                }
                 if (word.getValue().isEmpty()) {
                     message.setText("Missing word, please try again.");
                     add(message);
                     return;
-                }
-                else if (partOfSpeech.getValue() == null)
-                {
+                } else if (partOfSpeech.getValue() == null) {
                     message.setText("Missing part of speech, please try again.");
                     add(message);
                     return;
-                }
-                else if (meaning.getValue().isEmpty())
-                {
+                } else if (meaning.getValue().isEmpty()) {
                     message.setText("Missing meaning, please try again.");
                     add(message);
                     return;
                 }
-
 
                 // create an empty model
                 Model model = ModelFactory.createDefaultModel();
@@ -120,25 +119,17 @@ public class CreateWordView<Planet> extends VerticalLayout {
                 try {
                     if ((new File(inputFileName).length() == 0)) {
                         FileWriter myObj = new FileWriter(inputFileName);
-                        // InputStream in = RDFDataMgr.open( inputFileName );
-                        // if (in == null) {
-                        //     throw new IllegalArgumentException(
-                        //             "File: " + inputFileName + " not found");
-                        // }
+
                         if (word.getValue() != null) {
-                            Resource res = model.createResource(defaultURI + word.getValue() + partOfSpeech.getValue())
-                                    .addProperty(RDFS.label, word.getValue())
-                                    .addProperty(RDFS.isDefinedBy, partOfSpeech.getValue())
-                                    .addProperty(RDFS.comment, meaning.getValue());
+                            Resource res = model.createResource(defaultURI + word.getValue() + partOfSpeech.getValue()).addProperty(RDFS.label, word.getValue()).addProperty(RDFS.isDefinedBy,
+                                    partOfSpeech.getValue()).addProperty(RDFS.comment, meaning.getValue());
                         }
                         model.write(myObj);
 
-                    }
-                    else {
-                        InputStream in = RDFDataMgr.open( inputFileName );
+                    } else {
+                        InputStream in = RDFDataMgr.open(inputFileName);
                         if (in == null) {
-                            throw new IllegalArgumentException(
-                                    "File: " + inputFileName + " not found");
+                            throw new IllegalArgumentException("File: " + inputFileName + " not found");
                         }
 
                         // read the RDF/XML file
@@ -147,22 +138,19 @@ public class CreateWordView<Planet> extends VerticalLayout {
                         if (word.getValue() != null) {
                             ResIterator iter = model.listSubjects();
                             boolean check = false;
-                            while(iter.hasNext()) {
+                            while (iter.hasNext()) {
                                 Resource resource = iter.nextResource();
-                                if (resource.getProperty(RDFS.label).getString().equals(word.getValue())
-                                        && resource.getProperty(RDFS.isDefinedBy).getString().equals(partOfSpeech.getValue()))
+                                if (resource.getProperty(RDFS.label).getString().equals(word.getValue()) && resource.getProperty(RDFS.isDefinedBy).getString().equals(partOfSpeech.getValue())) {
                                     check = true;
+                                }
                             }
-                            if (check)
-                            {
+                            if (check) {
                                 message.setText("This word was already added to the dictionary, please try again.");
                                 add(message);
                                 return;
                             }
-                            Resource res = model.createResource(defaultURI + word.getValue() + partOfSpeech.getValue())
-                                    .addProperty(RDFS.label, word.getValue())
-                                    .addProperty(RDFS.isDefinedBy, partOfSpeech.getValue())
-                                    .addProperty(RDFS.comment, meaning.getValue());
+                            Resource res = model.createResource(defaultURI + word.getValue() + partOfSpeech.getValue()).addProperty(RDFS.label, word.getValue()).addProperty(RDFS.isDefinedBy,
+                                    partOfSpeech.getValue()).addProperty(RDFS.comment, meaning.getValue());
                         }
                         FileWriter myObj = new FileWriter(inputFileName);
                         model.write(myObj);
@@ -172,39 +160,6 @@ public class CreateWordView<Planet> extends VerticalLayout {
                     System.out.println("An error occurred.");
                     e.printStackTrace();
                 }
-
-                // // create the resource
-                // //   and add the properties cascading style
-                // Resource johnSmith
-                //         = model.createResource(personURI)
-                //         .addProperty(VCARD.FN, fullName)
-                //         .addProperty(VCARD.N,
-                //                 model.createResource()
-                //                         .addProperty(VCARD.Given, givenName)
-                //                         .addProperty(VCARD.Family, familyName));
-
-                // // now write the model in XML form to a file
-                // Resource vcard = model.getResource(personURI);
-                // // retrieve the value of the N property
-                // Resource name = (Resource) vcard.getProperty(VCARD.N)
-                //         .getObject();
-                // model.write(System.out);
-                // System.out.println(vcard.getProperty(VCARD.FN).getString());
-                // Model model2 = ModelFactory.createDefaultModel();
-                //
-                // InputStream in = FileManager.get().open( inputFileName );
-                // if (in == null) {
-                //     throw new IllegalArgumentException( "File: " + inputFileName + " not found");
-                // }
-                //
-                // // read the RDF/XML file
-                // model2.read(in, "");
-                // model2.write(System.out);
-                //
-                // // Resource foaf = model2.getResource("Kes Tas");
-                // Resource person = model2.getResource("file:///C:/stud/workspaces/demo/#me");
-                // String sv = person.getProperty(foaf.PERSON).getResource().getProperty(foaf.FAMILY_NAME).getString();
-                // System.out.println(person.getProperty(foaf.PERSON).getResource().getProperty(foaf.FAMILY_NAME).getString());
                 message.setText("Word added to RDF");
                 add(message);
 
@@ -232,5 +187,4 @@ public class CreateWordView<Planet> extends VerticalLayout {
         partsOfSpeech.add("Interjection");
         partOfSpeech.setItems(partsOfSpeech);
     }
-
 }
