@@ -31,13 +31,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.FluentQuery;
 
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Page;
@@ -57,7 +60,9 @@ public class MainView extends VerticalLayout {
     @Autowired
     SparqlDataService sparqlDataService;
 
+    private Dialog dialog = new Dialog(new Span("Error! No query string was provided, please try again."));
     private TextField query = new TextField("Query");
+    private Button closeButton = new Button("Close", e -> dialog.close());
     private TextField result = new TextField();
     private TextArea partOfSpeech = new TextArea();
     private TextField meaning = new TextField();
@@ -86,10 +91,12 @@ public class MainView extends VerticalLayout {
 
         var layout = new HorizontalLayout();
         layout.setAlignItems(Alignment.BASELINE);
-
+        query.setWidth("13em");
+        query.setPlaceholder("Type word or a fragment");
         var queryButton = new Button("Run query");
         queryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         var showAll = new Button("Show all dictionary");
+        showAll.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         var clearButton = new Button("Clear results");
         clearButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         layout.add(query, queryButton, showAll, clearButton, nextPageButton);
@@ -99,6 +106,14 @@ public class MainView extends VerticalLayout {
         queryButton.addClickListener(click -> {
             try {
                 sparqlDataService.deleteAll();
+                if (query.getValue().isBlank()) {
+                    dialog.getFooter().add(closeButton);
+                    add(dialog);
+                    dialog.open();
+                    /* position the dialog next to the button on the left */
+                    return;
+                }
+
                 sparqlSearch(query.getValue());
                 for (int i=0; i< resultsList.size(); i++) {
                     result.setValue(resultsList.get(i).getValue());
@@ -191,15 +206,12 @@ public class MainView extends VerticalLayout {
     void sparqlSearch(String search) {
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
         Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/demo/dictionary.rdf");
-        String rezultatas;
-        String queryString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-                "SELECT ?x ?word ?meaning ?partOW WHERE { " +
-                " ?x rdfs:label ?g ." +
+        String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+                "SELECT ?word ?meaning ?partOW WHERE { " +
                 " ?x rdfs:label ?word . " +
                 " ?x rdfs:comment ?meaning . " +
                 " ?x rdfs:isDefinedBy ?partOW . " +
-                " FILTER regex(?g, \"" + search + "\", \"i\") " +
+                " FILTER regex(?word, \"" + search + "\", \"i\") " +
                 "}";
         Query query1 = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query1, model);
@@ -313,5 +325,4 @@ public class MainView extends VerticalLayout {
         }
 
     }
-
 }
