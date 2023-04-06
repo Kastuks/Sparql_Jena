@@ -1,24 +1,29 @@
 <rdf:RDF
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-  <rdf:Description rdf:about="http://somewhere/boxVerb">
-    <rdfs:comment>enclose (a piece of text) within printed lines.</rdfs:comment>
-    <rdfs:isDefinedBy>Verb</rdfs:isDefinedBy>
-    <rdfs:label>box</rdfs:label>
-  </rdf:Description>
   <rdf:Description rdf:about="http://somewhere/dogNoun">
-    <rdfs:label>dog</rdfs:label>
-    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
     <rdfs:comment>a domesticated carnivorous mammal that typically has a long snout, an acute sense of smell, non-retractable claws, and a barking, howling, or whining voice.</rdfs:comment>
+    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
+    <rdfs:label>dog</rdfs:label>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://somewhere/boxVerb">
+    <rdfs:label>box</rdfs:label>
+    <rdfs:isDefinedBy>Verb</rdfs:isDefinedBy>
+    <rdfs:comment>enclose (a piece of text) within printed lines.</rdfs:comment>
   </rdf:Description>
   <rdf:Description rdf:about="http://somewhere/boxNoun">
-    <rdfs:label>box</rdfs:label>
-    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
     <rdfs:comment>a container with a flat base and sides, typically square or rectangular and having a lid.</rdfs:comment>
+    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
+    <rdfs:label>box</rdfs:label>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://somewhere/Apache_JenaNoun">
+    <rdfs:comment>A free and open source Java framework</rdfs:comment>
+    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
+    <rdfs:label>Apache Jena</rdfs:label>
   </rdf:Description>
   <rdf:Description rdf:about="http://somewhere/tableNoun">
-    <rdfs:comment>a piece of furniture with a flat top and one or more legs, providing a level surface for eating, writing, or working at.</rdfs:comment>
-    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
     <rdfs:label>table</rdfs:label>
+    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
+    <rdfs:comment>a piece of furniture with a flat top and one or more legs, providing a level surface for eating, writing, or working at.</rdfs:comment>
   </rdf:Description>
 </rdf:RDF>

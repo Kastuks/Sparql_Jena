@@ -2,21 +2,19 @@ package com.example.demo;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import org.apache.jena.base.Sys;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -26,24 +24,18 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.util.FileManagerImpl;
 import org.apache.jena.vocabulary.RDFS;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.repository.query.FluentQuery;
 
-import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.HasValue;
-import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Page;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -61,21 +53,28 @@ public class MainView extends VerticalLayout {
     SparqlDataService sparqlDataService;
 
     private Dialog dialog = new Dialog(new Span("Error! No query string was provided, please try again."));
-    private TextField query = new TextField("Query");
     private Button closeButton = new Button("Close", e -> dialog.close());
+    private Checkbox negateCheckBox = new Checkbox("Not", false);
+
+    private TextField query = new TextField("Query");
     private TextField result = new TextField();
-    private TextArea partOfSpeech = new TextArea();
     private TextField meaning = new TextField();
+    private TextArea partOfSpeech = new TextArea();
+
     private ArrayList<TextField> resultsList = new ArrayList<TextField>();
     private ArrayList<TextField> meaningsList = new ArrayList<TextField>();
     private ArrayList<TextArea> partOfSpeechesList = new ArrayList<TextArea>();
+    private ComboBox<String> searchIn = new ComboBox<>("Search in");
+
     private Grid<SparqlData> grid = new Grid<>(SparqlData.class);
     private Binder<SparqlData> binder = new Binder<>(SparqlData.class);
+
     static final String inputFileName  = "dictionary.rdf";
 
     public MainView(SparqlDataService service) {
         this.sparqlDataService = service;
 
+        addItemsSearchIn(searchIn);
         grid.setColumns("result", "partOfSpeech");
         grid.addColumn(
                         TemplateRenderer.<SparqlData>of("<div style='white-space:normal'>[[item.meaning]]</div>")
@@ -99,7 +98,7 @@ public class MainView extends VerticalLayout {
         showAll.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         var clearButton = new Button("Clear results");
         clearButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        layout.add(query, queryButton, showAll, clearButton, nextPageButton);
+        layout.add(query, negateCheckBox, searchIn, queryButton, showAll, clearButton, nextPageButton);
 
         binder.bindInstanceFields(this);
 
@@ -113,9 +112,12 @@ public class MainView extends VerticalLayout {
                     /* position the dialog next to the button on the left */
                     return;
                 }
-
-                sparqlSearch(query.getValue());
-                for (int i=0; i< resultsList.size(); i++) {
+                if (query.getValue().isEmpty()) {
+                    sparqlShowAll();
+                } else {
+                    sparqlSearch(query.getValue());
+                }
+                for (int i=0; i < resultsList.size(); i++) {
                     result.setValue(resultsList.get(i).getValue());
                     meaning.setValue(meaningsList.get(i).getValue());
                     partOfSpeech.setValue(partOfSpeechesList.get(i).getValue());
@@ -125,7 +127,6 @@ public class MainView extends VerticalLayout {
                     binder.writeBean(sparqlData);
                     sparqlDataService.addData(sparqlData);
                     // repository.save(sparqlData);
-
                 }
                 resultsList.clear();
                 meaningsList.clear();
@@ -204,18 +205,30 @@ public class MainView extends VerticalLayout {
     }
 
     void sparqlSearch(String search) {
+        String newSearch = "";
+        if (search.contains("?") || search.contains("*")) {
+            newSearch = searchToRegex(search);
+        } else {
+            newSearch = search;
+        }
+        String searchType;
+        if (searchIn.getValue() == "Meaning") {
+            searchType = "?meaning";
+        } else {
+            searchType = "?word";
+        }
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/demo/dictionary.rdf");
+        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
         String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
                 "SELECT ?word ?meaning ?partOW WHERE { " +
+                // " ?x " + searchType + " \"" + search + "\" . " +
                 " ?x rdfs:label ?word . " +
                 " ?x rdfs:comment ?meaning . " +
                 " ?x rdfs:isDefinedBy ?partOW . " +
-                " FILTER regex(?word, \"" + search + "\", \"i\") " +
+                " FILTER (" + (negateCheckBox.getValue() ? "!" : "") + "regex(" + searchType + ", \"" + "^" + newSearch + "$" + "\", \"i\")) " +
                 "}";
         Query query1 = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query1, model);
-
         try {
             ResultSet results = qexec.execSelect();
             while ( results.hasNext()) {
@@ -241,34 +254,63 @@ public class MainView extends VerticalLayout {
 
     }
 
-    public void sparqlTest1() {
-        FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/Jena_app/src/com/company/data.rdf");
+    public String searchToRegex(String search) {
+        String newSearch = "";
+        String replacedWord = "";
+        String words[] = search.split(" ");
+        for (String word : words) {
+            if (word.contains("?")) {
+                replacedWord = word.replace("?", "\\\\w");
+                replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
 
-        String queryString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-                "SELECT ?x ?word ?meaning ?partOW WHERE { " +
-                " ?x rdfs:label \"" + "search" + "\" ." +
+            } else if (word.contains("*")) {
+                replacedWord = word.replace("*", "\\\\w+");
+                replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
+            }
+
+            newSearch = newSearch.concat(replacedWord + " ");
+            replacedWord = "";
+        }
+        // StringUtils.chop(newSearch);
+        return StringUtils.chop(newSearch);
+    }
+
+    public void sparqlQuery() {
+
+    }
+
+    public void sparqlShowAll() {
+        FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
+        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
+        String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+                "SELECT ?word ?meaning ?partOW WHERE { " +
                 " ?x rdfs:label ?word . " +
                 " ?x rdfs:comment ?meaning . " +
                 " ?x rdfs:isDefinedBy ?partOW . " +
-                " FILTER regex(?g, \"" + "search" + "\", \"i\") " +
                 "}";
-        org.apache.jena.query.Query query = QueryFactory.create(queryString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, model);
-
+        Query query1 = QueryFactory.create(queryString);
+        QueryExecution qexec = QueryExecutionFactory.create(query1, model);
         try {
             ResultSet results = qexec.execSelect();
             while ( results.hasNext()) {
                 QuerySolution soln = results.nextSolution();
-                Literal name = soln.getLiteral("x");
-                System.out.println(name);
+                Literal name = soln.getLiteral("word");
+                Literal meaning = soln.getLiteral("meaning");
+                Literal partOW = soln.getLiteral("partOW");
+                // System.out.println(name);
+                TextField newVal = new TextField();
+                TextField newVal2 = new TextField();
+                TextArea newTxtArea = new TextArea();
+                newVal.setValue(name.getString());
+                resultsList.add(newVal);
+                newVal2.setValue(meaning.getString());
+                meaningsList.add(newVal2);
+                newTxtArea.setValue(partOW.getString());
+                partOfSpeechesList.add(newTxtArea);
             }
-        }
-        finally {
+        } finally {
             qexec.close();
         }
-
     }
     static void sparqlTest2() {
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
@@ -323,6 +365,11 @@ public class MainView extends VerticalLayout {
         finally {
             qexec.close();
         }
-
+    }
+    public void addItemsSearchIn(ComboBox<String> searchIn) {
+        List<String> searchesIn = new ArrayList<>();
+        searchesIn.add("Word");
+        searchesIn.add("Meaning");
+        searchIn.setItems(searchesIn);
     }
 }

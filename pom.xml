@@ -49,6 +49,13 @@
 			<type>pom</type>
 			<version>4.6.1</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.jena/jena-querybuilder -->
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-querybuilder</artifactId>
+			<type>jar</type>
+			<version>4.6.1</version>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>

@@ -121,6 +121,7 @@ public class CreateWordView<Planet> extends VerticalLayout {
                         FileWriter myObj = new FileWriter(inputFileName);
 
                         if (word.getValue() != null) {
+                            word.getValue().replace(" ", "_");
                             Resource res = model.createResource(defaultURI + word.getValue() + partOfSpeech.getValue()).addProperty(RDFS.label, word.getValue()).addProperty(RDFS.isDefinedBy,
                                     partOfSpeech.getValue()).addProperty(RDFS.comment, meaning.getValue());
                         }
