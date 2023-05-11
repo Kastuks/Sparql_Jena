@@ -2,7 +2,6 @@ package com.example.demo;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -207,7 +206,7 @@ public class MainView extends VerticalLayout {
     void sparqlSearch(String search) {
         String newSearch = "";
         if (search.contains("?") || search.contains("*")) {
-            newSearch = searchToRegex(search);
+            newSearch = SearchFunctions.searchToRegex(search);
         } else {
             newSearch = search;
         }
@@ -216,6 +215,9 @@ public class MainView extends VerticalLayout {
             searchType = "?meaning";
         } else {
             searchType = "?word";
+        }
+        if (newSearch.contains("{") && newSearch.contains("}")) {
+            newSearch = SearchFunctions.addXWordContext(newSearch);
         }
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
         Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
@@ -251,28 +253,6 @@ public class MainView extends VerticalLayout {
         finally {
             qexec.close();
         }
-
-    }
-
-    public String searchToRegex(String search) {
-        String newSearch = "";
-        String replacedWord = "";
-        String words[] = search.split(" ");
-        for (String word : words) {
-            if (word.contains("?")) {
-                replacedWord = word.replace("?", "\\\\w");
-                replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
-
-            } else if (word.contains("*")) {
-                replacedWord = word.replace("*", "\\\\w+");
-                replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
-            }
-
-            newSearch = newSearch.concat(replacedWord + " ");
-            replacedWord = "";
-        }
-        // StringUtils.chop(newSearch);
-        return StringUtils.chop(newSearch);
     }
 
     public void sparqlQuery() {
