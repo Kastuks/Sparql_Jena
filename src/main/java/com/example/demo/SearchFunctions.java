@@ -12,8 +12,8 @@ public class SearchFunctions {
         String replacedWord = "";
         String words[] = search.split(" ");
         for (String word : words) {
-            if (word.contains("{") && word.contains("}")) {
-                String tempWord = word.replace("{", "").replace("}", "");
+            if (word.contains("<") && word.contains(">")) {
+                String tempWord = word.replace("<", "").replace(">", "");
                 try {
                     Integer.parseInt(tempWord);
                 } catch (Exception e) {
@@ -21,7 +21,7 @@ public class SearchFunctions {
                     return search;
                 }
 
-                replacedWord = "(.*\\\\w+.*){0," + tempWord + "}" ;
+                replacedWord = "(?:\\\\s*\\\\S+(?:\\\\s+\\\\S+){0," + tempWord + "})?\\\\s*" ;
 
             } else {
                 replacedWord = word;
@@ -44,6 +44,8 @@ public class SearchFunctions {
             } else if (word.contains("*")) {
                 replacedWord = word.replace("*", "\\\\w+");
                 replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
+            } else {
+                replacedWord = word;
             }
 
             newSearch = newSearch.concat(replacedWord + " ");

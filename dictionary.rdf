@@ -16,14 +16,14 @@
     <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
     <rdfs:label>box</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://somewhere/Apache_JenaNoun">
-    <rdfs:comment>A free and open source Java framework</rdfs:comment>
-    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
-    <rdfs:label>Apache Jena</rdfs:label>
-  </rdf:Description>
   <rdf:Description rdf:about="http://somewhere/tableNoun">
-    <rdfs:label>table</rdfs:label>
-    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
     <rdfs:comment>a piece of furniture with a flat top and one or more legs, providing a level surface for eating, writing, or working at.</rdfs:comment>
+    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
+    <rdfs:label>table</rdfs:label>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://somewhere/Apache_JenaNoun">
+    <rdfs:label>Apache Jena</rdfs:label>
+    <rdfs:isDefinedBy>Noun</rdfs:isDefinedBy>
+    <rdfs:comment>A free and open source Java framework</rdfs:comment>
   </rdf:Description>
 </rdf:RDF>

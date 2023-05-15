@@ -216,29 +216,33 @@ public class MainView extends VerticalLayout {
         } else {
             searchType = "?word";
         }
-        if (newSearch.contains("{") && newSearch.contains("}")) {
+        if (newSearch.contains("<") && newSearch.contains(">")) {
             newSearch = SearchFunctions.addXWordContext(newSearch);
         }
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
         Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
         String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
-                "SELECT ?word ?meaning ?partOW WHERE { " +
+                " SELECT ?word ?meaning ?partOW WHERE { " +
                 // " ?x " + searchType + " \"" + search + "\" . " +
                 " ?x rdfs:label ?word . " +
                 " ?x rdfs:comment ?meaning . " +
                 " ?x rdfs:isDefinedBy ?partOW . " +
                 " FILTER (" + (negateCheckBox.getValue() ? "!" : "") + "regex(" + searchType + ", \"" + "^" + newSearch + "$" + "\", \"i\")) " +
-                "}";
+                " } " +
+                " LIMIT 10";
         Query query1 = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query1, model);
         try {
+            System.out.println("1: " + qexec.getTimeout1());
+            System.out.println("2: " + qexec.getTimeout2());
             ResultSet results = qexec.execSelect();
-            while ( results.hasNext()) {
+            System.out.println("reached here");
+            while (results.hasNext()) {
                 QuerySolution soln = results.nextSolution();
                 Literal name = soln.getLiteral("word");
                 Literal meaning = soln.getLiteral("meaning");
                 Literal partOW = soln.getLiteral("partOW");
-                // System.out.println(name);
+                System.out.println(name);
                 TextField newVal = new TextField();
                 TextField newVal2 = new TextField();
                 TextArea newTxtArea = new TextArea();

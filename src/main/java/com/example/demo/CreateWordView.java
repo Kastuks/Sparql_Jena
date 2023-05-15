@@ -121,9 +121,11 @@ public class CreateWordView<Planet> extends VerticalLayout {
                         FileWriter myObj = new FileWriter(inputFileName);
 
                         if (word.getValue() != null) {
-                            word.getValue().replace(" ", "_");
-                            Resource res = model.createResource(defaultURI + word.getValue() + partOfSpeech.getValue()).addProperty(RDFS.label, word.getValue()).addProperty(RDFS.isDefinedBy,
-                                    partOfSpeech.getValue()).addProperty(RDFS.comment, meaning.getValue());
+                            // word.getValue().replace(" ", "_");
+                            Resource res = model.createResource(defaultURI + word.getValue().replace(" ", "_") + partOfSpeech.getValue())
+                                    .addProperty(RDFS.label, word.getValue())
+                                    .addProperty(RDFS.isDefinedBy, partOfSpeech.getValue())
+                                    .addProperty(RDFS.comment, meaning.getValue());
                         }
                         model.write(myObj);
 
@@ -141,7 +143,9 @@ public class CreateWordView<Planet> extends VerticalLayout {
                             boolean check = false;
                             while (iter.hasNext()) {
                                 Resource resource = iter.nextResource();
-                                if (resource.getProperty(RDFS.label).getString().equals(word.getValue()) && resource.getProperty(RDFS.isDefinedBy).getString().equals(partOfSpeech.getValue())) {
+                                if (resource.getProperty(RDFS.label).getString().equals(word.getValue())
+                                        && resource.getProperty(RDFS.isDefinedBy).getString().equals(partOfSpeech.getValue())) {
+
                                     check = true;
                                 }
                             }
@@ -150,8 +154,10 @@ public class CreateWordView<Planet> extends VerticalLayout {
                                 add(message);
                                 return;
                             }
-                            Resource res = model.createResource(defaultURI + word.getValue() + partOfSpeech.getValue()).addProperty(RDFS.label, word.getValue()).addProperty(RDFS.isDefinedBy,
-                                    partOfSpeech.getValue()).addProperty(RDFS.comment, meaning.getValue());
+                            Resource res = model.createResource(defaultURI + word.getValue().replace(" ", "_") + partOfSpeech.getValue())
+                                    .addProperty(RDFS.label, word.getValue())
+                                    .addProperty(RDFS.isDefinedBy, partOfSpeech.getValue())
+                                    .addProperty(RDFS.comment, meaning.getValue());
                         }
                         FileWriter myObj = new FileWriter(inputFileName);
                         model.write(myObj);
