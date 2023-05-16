@@ -32,7 +32,10 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -54,11 +57,15 @@ public class MainView extends VerticalLayout {
     private Dialog dialog = new Dialog(new Span("Error! No query string was provided, please try again."));
     private Button closeButton = new Button("Close", e -> dialog.close());
     private Checkbox negateCheckBox = new Checkbox("Not", false);
+    private ComboBox<LogicalOperatorEnum> logicalOperator = new ComboBox<>();
 
     private TextField query = new TextField("Query");
     private TextField result = new TextField();
     private TextField meaning = new TextField();
     private TextArea partOfSpeech = new TextArea();
+
+    private TextField query2 = new TextField("Query");
+    private ComboBox<String> searchIn2 = new ComboBox<>("Search in");
 
     private ArrayList<TextField> resultsList = new ArrayList<TextField>();
     private ArrayList<TextField> meaningsList = new ArrayList<TextField>();
@@ -74,47 +81,101 @@ public class MainView extends VerticalLayout {
         this.sparqlDataService = service;
 
         addItemsSearchIn(searchIn);
+        addItemsSearchIn(searchIn2);
         grid.setColumns("result", "partOfSpeech");
         grid.addColumn(
                         TemplateRenderer.<SparqlData>of("<div style='white-space:normal'>[[item.meaning]]</div>")
                                 .withProperty("meaning", SparqlData::getMeaning))
                 .setHeader("Meaning").setFlexGrow(1);
-        add(getForm(), grid);
+
+
+        add(getForm(), getForm2(), grid);
 
         refreshGrid();
     }
-    private Component getForm() {
 
-        var nextPageButton = new Button("Word creation page");
-
+    private Component getForm2() {
         var layout = new HorizontalLayout();
+        var informationButton = new Button("Tutorial");
+
+        addItemsLogicalOperator(logicalOperator);
+        logicalOperator.setValue(LogicalOperatorEnum.OR);
+        logicalOperator.setWidth("5em");
+
+        informationButton.getElement().getStyle().set("margin-left", "auto");
+        layout.setWidthFull();
+        layout.setAlignItems(Alignment.BASELINE);
+        query2.setWidth("13em");
+        query2.setPlaceholder("Type word or a fragment");
+        layout.add(query2, searchIn2, logicalOperator, informationButton);
+        searchIn2.setEnabled(false);
+
+        informationButton.addClickListener(click -> {
+            String spanText = "How to use this website: <br>" +
+                    "* - <br>" +
+                    "? - " +
+                    "<X> - ";
+
+            Span infoSpan = new Span();
+            // infoSpan.add("abba ");
+            infoSpan.getElement().setProperty("innerHTML", spanText);
+            Dialog infoDialog = new Dialog(infoSpan);
+            Button closeButton2 = new Button("Close", e -> infoDialog.close());
+
+            infoDialog.setHeaderTitle("How to use search");
+            infoDialog.getFooter().add(closeButton2);
+
+            add(infoDialog);
+            infoDialog.open();
+        });
+
+        return layout;
+    }
+
+    private Component getForm() {
+        var layout = new HorizontalLayout();
+        var nextPageButton = new Button("Word creation page");
+        var queryButton = new Button("Run query");
+        var showAll = new Button("Show all dictionary");
+        var clearButton = new Button("Clear results");
+
+        queryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        showAll.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        clearButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        layout.setWidthFull();
         layout.setAlignItems(Alignment.BASELINE);
         query.setWidth("13em");
         query.setPlaceholder("Type word or a fragment");
-        var queryButton = new Button("Run query");
-        queryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        var showAll = new Button("Show all dictionary");
-        showAll.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        var clearButton = new Button("Clear results");
-        clearButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        layout.add(query, negateCheckBox, searchIn, queryButton, showAll, clearButton, nextPageButton);
+
+        nextPageButton.getElement().getStyle().set("margin-left", "auto");
+
+        layout.add(query, searchIn, negateCheckBox, queryButton, showAll, clearButton, nextPageButton);
+        layout.setAlignSelf(Alignment.END, nextPageButton);
 
         binder.bindInstanceFields(this);
+
+        searchIn.addValueChangeListener(event -> {
+            if (searchIn.getValue().equals(SearchInEnum.Word.name())) {
+                searchIn2.setValue(SearchInEnum.Meaning.name());
+            } else {
+                searchIn2.setValue(SearchInEnum.Word.name());
+            }
+        });
 
         queryButton.addClickListener(click -> {
             try {
                 sparqlDataService.deleteAll();
-                if (query.getValue().isBlank()) {
-                    dialog.getFooter().add(closeButton);
-                    add(dialog);
-                    dialog.open();
-                    /* position the dialog next to the button on the left */
-                    return;
-                }
-                if (query.getValue().isEmpty()) {
+                // if (query.getValue().isBlank()) {
+                //     dialog.getFooter().add(closeButton);
+                //     add(dialog);
+                //     dialog.open();
+                //     /* position the dialog next to the button on the left */
+                //     return;
+                // }
+                if (query.getValue().isEmpty() && query2.getValue().isEmpty()) {
                     sparqlShowAll();
                 } else {
-                    sparqlSearch(query.getValue());
+                    sparqlSearch(query.getValue(), query2.getValue());
                 }
                 for (int i=0; i < resultsList.size(); i++) {
                     result.setValue(resultsList.get(i).getValue());
@@ -203,22 +264,45 @@ public class MainView extends VerticalLayout {
         grid.setItems(sparqlDataService.findAllData());
     }
 
-    void sparqlSearch(String search) {
+    String sparqlSearchResolver(String search) {
         String newSearch = "";
         if (search.contains("?") || search.contains("*")) {
             newSearch = SearchFunctions.searchToRegex(search);
         } else {
             newSearch = search;
         }
-        String searchType;
-        if (searchIn.getValue() == "Meaning") {
-            searchType = "?meaning";
-        } else {
-            searchType = "?word";
-        }
+
         if (newSearch.contains("<") && newSearch.contains(">")) {
             newSearch = SearchFunctions.addXWordContext(newSearch);
         }
+        return newSearch;
+    }
+
+    String resolveSearchType(ComboBox<String> searchIn) {
+        if (searchIn.getValue() == SearchInEnum.Meaning.name()) {
+            return "?meaning";
+        } else if (searchIn.getValue() == SearchInEnum.Word.name()){
+            return "?word";
+        }
+        return null;
+    }
+
+    void sparqlSearch(String search, String secondSearch) {
+        String newSearch = sparqlSearchResolver(search);
+        String secondNewSearch = sparqlSearchResolver(secondSearch);
+
+        String searchType = resolveSearchType(searchIn);
+        String secondSearchType = searchIn2.getValue().isEmpty() ? "?meaning" : resolveSearchType(searchIn2);
+
+        // if (search.contains("?") || search.contains("*")) {
+        //     newSearch = SearchFunctions.searchToRegex(search);
+        // } else {
+        //     newSearch = search;
+        // }
+        //
+        // if (newSearch.contains("<") && newSearch.contains(">")) {
+        //     newSearch = SearchFunctions.addXWordContext(newSearch);
+        // }
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
         Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
         String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
@@ -352,8 +436,16 @@ public class MainView extends VerticalLayout {
     }
     public void addItemsSearchIn(ComboBox<String> searchIn) {
         List<String> searchesIn = new ArrayList<>();
-        searchesIn.add("Word");
-        searchesIn.add("Meaning");
+        searchesIn.add(SearchInEnum.Word.name());
+        searchesIn.add(SearchInEnum.Meaning.name());
         searchIn.setItems(searchesIn);
     }
+
+    public void addItemsLogicalOperator(ComboBox<LogicalOperatorEnum> logicalOperator) {
+        List<LogicalOperatorEnum> logicalOperators = new ArrayList<>();
+        logicalOperators.add(LogicalOperatorEnum.AND);
+        logicalOperators.add(LogicalOperatorEnum.OR);
+        logicalOperator.setItems(logicalOperators);
+    }
+
 }
