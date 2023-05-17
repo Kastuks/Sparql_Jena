@@ -38,7 +38,7 @@ public class SearchFunctions {
         String words[] = search.split(" ");
         for (String word : words) {
             if (word.contains("?")) {
-                replacedWord = word.replace("?", "\\\\w");
+                replacedWord = word.replace("?", "\\\\S");
                 replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
 
             } else if (word.contains("*")) {

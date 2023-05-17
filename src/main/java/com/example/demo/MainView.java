@@ -111,13 +111,19 @@ public class MainView extends VerticalLayout {
         searchIn2.setEnabled(false);
 
         informationButton.addClickListener(click -> {
-            String spanText = "How to use this website: <br>" +
-                    "* - <br>" +
-                    "? - " +
-                    "<X> - ";
+            String spanText = "How to use this web dictionary: <br>" +
+                    "Select AND or OR to use query for a match between either of the search bars or for a search to match "
+                    + "both search bars in the given dictionary. A search may be performed for the meaning of a word or the word itself. "
+                    + "Select a value in the top \"Search in\" combo box to search for the meaning of the word or the word itself. "
+                    + "The \"Not\" checkbox may be checked in order to get results that are opposite of the selected query. "
+                    + "<br> There are also search functions implemented into this web dictionary: <br>"
+                    + "* - Use the star symbol in order to search for any multiple characters ([a-Z], word boundary). \"def*\" would be a correct match of \"definition\"<br> "
+                    + "? - Use the question mark in order to search for any single character that is not a whitespace. \"defin?\" would match \"define\", but not \"defines\".<br> "
+                    + "<X> word context - Use the <X> (X - number) to skip the selected amount of words in a string of text. "
+                    + "For example, the given search query: \"enclose <10> lines.\" would match the text: \"enclose (a piece of text) within printed lines\". <br>"
+                    + "These search functions may be used together.";
 
             Span infoSpan = new Span();
-            // infoSpan.add("abba ");
             infoSpan.getElement().setProperty("innerHTML", spanText);
             Dialog infoDialog = new Dialog(infoSpan);
             Button closeButton2 = new Button("Close", e -> infoDialog.close());
@@ -165,13 +171,7 @@ public class MainView extends VerticalLayout {
         queryButton.addClickListener(click -> {
             try {
                 sparqlDataService.deleteAll();
-                // if (query.getValue().isBlank()) {
-                //     dialog.getFooter().add(closeButton);
-                //     add(dialog);
-                //     dialog.open();
-                //     /* position the dialog next to the button on the left */
-                //     return;
-                // }
+
                 if (query.getValue().isEmpty() && query2.getValue().isEmpty()) {
                     sparqlShowAll();
                 } else {
@@ -212,8 +212,6 @@ public class MainView extends VerticalLayout {
 
                 // read the RDF/XML file
                 model.read(in, null);
-
-                // model.listSubjects();
 
                 // select all the resources with a RDFS property
                 ResIterator iter = model.listSubjectsWithProperty(RDFS.label);
@@ -281,10 +279,9 @@ public class MainView extends VerticalLayout {
     String resolveSearchType(ComboBox<String> searchIn) {
         if (searchIn.getValue() == SearchInEnum.Meaning.name()) {
             return "?meaning";
-        } else if (searchIn.getValue() == SearchInEnum.Word.name()){
+        } else {
             return "?word";
         }
-        return null;
     }
 
     void sparqlSearch(String search, String secondSearch) {
@@ -292,26 +289,20 @@ public class MainView extends VerticalLayout {
         String secondNewSearch = sparqlSearchResolver(secondSearch);
 
         String searchType = resolveSearchType(searchIn);
-        String secondSearchType = searchIn2.getValue().isEmpty() ? "?meaning" : resolveSearchType(searchIn2);
+        String secondSearchType = StringUtils.isEmpty(searchIn2.getValue()) ? "?meaning" : resolveSearchType(searchIn2);
 
-        // if (search.contains("?") || search.contains("*")) {
-        //     newSearch = SearchFunctions.searchToRegex(search);
-        // } else {
-        //     newSearch = search;
-        // }
-        //
-        // if (newSearch.contains("<") && newSearch.contains(">")) {
-        //     newSearch = SearchFunctions.addXWordContext(newSearch);
-        // }
+        String logicalOperand = LogicalOperatorEnum.AND.equals(logicalOperator.getValue()) ? "&&" : "||";
+
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
         Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
         String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
                 " SELECT ?word ?meaning ?partOW WHERE { " +
-                // " ?x " + searchType + " \"" + search + "\" . " +
                 " ?x rdfs:label ?word . " +
                 " ?x rdfs:comment ?meaning . " +
                 " ?x rdfs:isDefinedBy ?partOW . " +
-                " FILTER (" + (negateCheckBox.getValue() ? "!" : "") + "regex(" + searchType + ", \"" + "^" + newSearch + "$" + "\", \"i\")) " +
+                " FILTER ("
+                + (negateCheckBox.getValue() ? "!" : "") + "(regex(" + searchType + ", \"" + "^" + newSearch + "$\", \"i\") "
+                + logicalOperand + " regex(" + secondSearchType + ", \"^" + secondNewSearch + "$\", \"i\"))) " +
                 " } " +
                 " LIMIT 10";
         Query query1 = QueryFactory.create(queryString);
