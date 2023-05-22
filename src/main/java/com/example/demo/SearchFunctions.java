@@ -42,7 +42,7 @@ public class SearchFunctions {
                 replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
 
             } else if (word.contains("*")) {
-                replacedWord = word.replace("*", "\\\\w+");
+                replacedWord = word.replace("*", "\\\\S+");
                 replacedWord = replacedWord.replace(replacedWord, "(\\\\b" + replacedWord + ")");
             } else {
                 replacedWord = word;
