@@ -58,6 +58,7 @@ public class MainView extends VerticalLayout {
     private Button closeButton = new Button("Close", e -> dialog.close());
     private Checkbox negateCheckBox = new Checkbox("Not", false);
     private ComboBox<LogicalOperatorEnum> logicalOperator = new ComboBox<>();
+    private String currentDirectory = System.getProperty("user.dir");
 
     private TextField query = new TextField("Query");
     private TextField result = new TextField();
@@ -294,7 +295,7 @@ public class MainView extends VerticalLayout {
         String logicalOperand = LogicalOperatorEnum.AND.equals(logicalOperator.getValue()) ? "&&" : "||";
 
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
+        Model model = FileManagerImpl.get().loadModel(currentDirectory + "/dictionary.rdf");
         String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
                 " SELECT ?word ?meaning ?partOW WHERE { " +
                 " ?x rdfs:label ?word . " +
@@ -340,7 +341,7 @@ public class MainView extends VerticalLayout {
 
     public void sparqlShowAll() {
         FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/SPARQL_Dictionary/dictionary.rdf");
+        Model model = FileManagerImpl.get().loadModel(currentDirectory + "/dictionary.rdf");
         String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
                 "SELECT ?word ?meaning ?partOW WHERE { " +
                 " ?x rdfs:label ?word . " +
@@ -371,60 +372,7 @@ public class MainView extends VerticalLayout {
             qexec.close();
         }
     }
-    static void sparqlTest2() {
-        FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/Jena_app/src/com/company/data.rdf");
 
-        String queryString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-                "PREFIX foaf: <http://xmlns.com/foaf/0.1/> " +
-                "SELECT * WHERE { " +
-                " ?person foaf:name ?x ." +
-                " ?person foaf:knows ?person2 ." +
-                " ?person2 foaf:name ?y ." +
-                "FILTER( ?y = \"vardas\")" +
-                "}";
-        org.apache.jena.query.Query query = QueryFactory.create(queryString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, model);
-
-        try {
-            ResultSet results = qexec.execSelect();
-            while ( results.hasNext()) {
-                QuerySolution soln = results.nextSolution();
-                Literal name = soln.getLiteral("x");
-                System.out.println(name);
-            }
-        }
-        finally {
-            qexec.close();
-        }
-
-    }
-    static void sparqlTest3() {
-        FileManagerImpl.get().addLocatorClassLoader(MainView.class.getClassLoader());
-        Model model = FileManagerImpl.get().loadModel("c:/stud/workspaces/Jena_app/src/com/company/data.rdf");
-
-        String queryString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-                "PREFIX foaf: <http://xmlns.com/foaf/0.1/> " +
-                "SELECT * WHERE { " +
-                " ?person foaf:name ?x ." +
-                " ?person foaf:knows ?person2 ." +
-                " ?person2 foaf:name ?y ." +
-                "}";
-        org.apache.jena.query.Query query = QueryFactory.create(queryString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, model);
-
-        try {
-            ResultSet results = qexec.execSelect();
-            while ( results.hasNext()) {
-                QuerySolution soln = results.nextSolution();
-                Literal name = soln.getLiteral("x");
-                System.out.println(name);
-            }
-        }
-        finally {
-            qexec.close();
-        }
-    }
     public void addItemsSearchIn(ComboBox<String> searchIn) {
         List<String> searchesIn = new ArrayList<>();
         searchesIn.add(SearchInEnum.Word.name());
